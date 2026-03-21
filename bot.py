@@ -16,27 +16,33 @@ CHAT_ID = os.environ.get('CHAT_ID')
 def send_telegram(msg):
     if TOKEN and CHAT_ID:
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+        try:
+            requests.post(url, data={"chat_id": CHAT_ID, "text": msg}, timeout=10)
+        except Exception as e:
+            print(f"Telegram yuborishda xato: {e}")
 
 def check():
     chrome_options = Options()
-    # Virtual serverlar uchun zaruriy sozlamalar
-    chrome_options.add_argument("--headless=new") 
+    # GitHub Actions uchun majburiy sozlamalar
+    chrome_options.add_argument("--headless=new") # Ekransiz rejim
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    
-    # Drayverni o'rnatish
+    # Sayt robot deb bloklamasligi uchun user-agent
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+
     try:
+        print("Drayver yuklanmoqda...")
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        print("Sayt tekshirilmoqda...")
+        print("Sayt ochilmoqda...")
         driver.get("https://certiport.uz/uz/register")
         wait = WebDriverWait(driver, 30)
 
-        # Dropdown'larni tanlash
+        # Dropdown tanlovlari
+        print("Ma'lumotlar kiritilmoqda...")
         wait.until(EC.presence_of_element_located((By.NAME, "exam_id"))).send_keys("IC3 Digital Literacy GS6")
         time.sleep(2)
         driver.find_element(By.NAME, "language").send_keys("English")
@@ -46,6 +52,7 @@ def check():
         driver.find_element(By.NAME, "location_id").send_keys("Toshkent / Ташкент")
         
         # Kalendar yuklanishini kutish
+        print("Kalendar tekshirilmoqda...")
         time.sleep(15)
 
         days = driver.find_elements(By.CLASS_NAME, "day")
@@ -62,7 +69,7 @@ def check():
             print("Tekshirildi: Hozircha bo'sh joy yo'q.")
             
     except Exception as e:
-        print(f"Xatolik: {str(e)}")
+        print(f"Xatolik yuz berdi: {e}")
     finally:
         if 'driver' in locals():
             driver.quit()
