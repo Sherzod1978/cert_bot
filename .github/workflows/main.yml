@@ -2,37 +2,31 @@ name: Certiport Checker Bot
 
 on:
   schedule:
-    # Har kuni Toshkent vaqti bilan 09:00 da ishga tushadi (UTC 04:00)
     - cron: '0 4 * * *'
-  workflow_dispatch: # Qo'lda ishga tushirish imkoniyati
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # v3 dan v4 ga yangilandi
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # v4 dan v5 ga yangilandi
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install selenium requests webdriver-manager
 
       - name: Run bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python bot.py
-        - name: Run bot
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python bot.py
 
-      # Xato bo'lganda rasmni saqlash uchun:
       - name: Upload Error Screenshot
         if: failure()
         uses: actions/upload-artifact@v4
