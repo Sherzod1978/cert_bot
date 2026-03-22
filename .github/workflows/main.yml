@@ -2,7 +2,8 @@ name: Certiport Checker Bot
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Har 15 daqiqada ishlaydi
+    # Har kuni Toshkent vaqti bilan 09:00 da ishga tushadi (UTC 04:00)
+    - cron: '0 4 * * *'
   workflow_dispatch: # Qo'lda ishga tushirish imkoniyati
 
 jobs:
@@ -10,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v3 dan v4 ga yangilandi
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # v4 dan v5 ga yangilandi
         with:
           python-version: '3.9'
 
