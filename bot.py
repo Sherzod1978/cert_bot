@@ -3,7 +3,6 @@ import time
 import requests
 import traceback
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -18,35 +17,17 @@ def send_telegram(msg):
     if TOKEN and CHAT_ID:
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
         try:
-            requests.post(url, data={"chat_id": CHAT_ID, "text": msg}, timeout=10)
+            res = requests.post(url, data={"chat_id": CHAT_ID, "text": msg}, timeout=10)
+            print(f"Telegram javobi status kodi: {res.status_code}")
         except Exception as e:
             print(f"Telegram yuborishda xato: {e}")
 
 def check():
     chrome_options = Options()
-    # GitHub Actions va blokirovkadan qochish uchun sozlamalar
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    
-    # Blokirovkadan qochish uchun qo'shimcha argumentlar
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option('useAutomationExtension', False)
-    
-    # Haqiqiy foydalanuvchiga o'xshatish uchun
-    chrome_options.add_argument("window-size=1920,1080")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    
-    # Bot ekanligini yashirish uchun qo'shimcha argumentlar
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option('useAutomationExtension', False)
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
     driver = None
@@ -54,80 +35,53 @@ def check():
         print("Drayver yuklanmoqda...")
         driver = webdriver.Chrome(options=chrome_options)
         
-        # Brauzerga "bot emasman" degan buyruqni yuborish
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": """
-                Object.defineProperty(navigator, 'webdriver', {
-                  get: () => undefined
-                })
-            """
-        })
-
         print("Sayt ochilmoqda...")
         driver.get("https://certiport.uz/uz/register")
-        
-        # Barcha iframe'lardan chiqib, asosiy sahifaga fokuslanish
-        driver.switch_to.default_content()
-        
-        # Kutish vaqtini 30 soniyaga oshirdik
         wait = WebDriverWait(driver, 30)
 
         print("Ma'lumotlar kiritilmoqda...")
-        
-        # 1. Imtihon turini tanlash (CSS Selector orqali)
+        # Dropdown elementlarini tanlash
         exam_id = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "select[name='exam_id']")))
         Select(exam_id).select_by_visible_text("IC3 Digital Literacy GS6")
-        time.sleep(2) # Formaning dinamik yangilanishi uchun
         
-        # 2. Tilni tanlash
-        lang_el = driver.find_element(By.NAME, "language")
-        Select(lang_el).select_by_visible_text("English")
         time.sleep(2)
+        lang = driver.find_element(By.NAME, "language")
+        Select(lang).select_by_visible_text("English")
         
-        # 3. Modulni tanlash
-        mod_el = driver.find_element(By.NAME, "module_id")
-        Select(mod_el).select_by_visible_text("Level 1")
         time.sleep(2)
+        module = driver.find_element(By.NAME, "module_id")
+        Select(module).select_by_visible_text("Level 1")
         
-        # 4. Joylashuvni tanlash
-        loc_el = driver.find_element(By.NAME, "location_id")
-        Select(loc_el).select_by_visible_text("Toshkent / Ташкент")
+        time.sleep(2)
+        loc = driver.find_element(By.NAME, "location_id")
+        Select(loc).select_by_visible_text("Toshkent / Ташкент")
         
         print("Kalendar yuklanishini kutmoqdaman...")
-        time.sleep(12) # Kalendar elementlari paydo bo'lishi uchun
+        time.sleep(15)
 
-        # Kalendar kunlarini tekshirish
         days = driver.find_elements(By.CLASS_NAME, "day")
         found = False
         for day in days:
             class_info = day.get_attribute("class")
-            # 'red' bo'lmagan va raqamli kunlarni qidirish
             if "red" not in class_info and day.text.strip().isdigit():
-                msg = f"🔥 BO'SH JOY TOPILDI!\nSana: {day.text}\nRo'yxatdan o'tish: https://certiport.uz/uz/register"
-                send_telegram(msg)
+                send_telegram(f"🔥 BO'SH JOY TOPILDI! Sana: {day.text}\nRo'yxatdan o'ting: https://certiport.uz/uz/register")
                 found = True
-                print(f"Topildi: {day.text}")
                 break
         
         if not found:
             print("Tekshirildi: Hozircha bo'sh joy yo'q.")
             
     except Exception as e:
-        print("Xatolik yuz berdi. Skrinshot saqlanmoqda...")
+        error_msg = f"❌ Botda xatolik: {str(e)[:100]}"
+        print(error_msg)
+        send_telegram(error_msg) # Xatolikni Telegramga yuborish
         if driver:
             driver.save_screenshot("debug_error.png")
-        
-        error_msg = traceback.format_exc()
-        print(f"Xatolik tafsiloti:\n{error_msg}")
-        # Ixtiyoriy: Xatoni telegramga qisqacha yuborish
-        # send_telegram(f"❌ Xatolik yuz berdi: {str(e)[:100]}")
-        
     finally:
         if driver:
             driver.quit()
-            print("Brauzer yopildi.")
 
 if __name__ == "__main__":
-    # Har safar ishga tushganda 1 marta xabar beradi
-    send_telegram("🤖 Tizim: Kunlik tekshirish boshlandi. Ishni boshladim!")
+    # Avval Telegram ishlashini tekshiramiz
+    send_telegram("🤖 Tizim: Ishni boshladim! Certiport saytini tekshirishga o'taman...")
     check()
