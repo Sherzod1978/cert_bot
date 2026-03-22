@@ -1,12 +1,12 @@
 import os
 import time
 import requests
+import traceback
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 
 # GitHub Secrets'dan ma'lumotlarni olish
@@ -23,37 +23,46 @@ def send_telegram(msg):
 
 def check():
     chrome_options = Options()
-    # GitHub Actions uchun majburiy sozlamalar
-    chrome_options.add_argument("--headless=new") # Ekransiz rejim
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    # Sayt robot deb bloklamasligi uchun user-agent
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
+    driver = None
     try:
         print("Drayver yuklanmoqda...")
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # GitHub Actions muhitida drayverni avtomatik topish uchun
+        driver = webdriver.Chrome(options=chrome_options)
         
         print("Sayt ochilmoqda...")
         driver.get("https://certiport.uz/uz/register")
-        wait = WebDriverWait(driver, 30)
+        wait = WebDriverWait(driver, 20)
 
-        # Dropdown tanlovlari
         print("Ma'lumotlar kiritilmoqda...")
-        wait.until(EC.presence_of_element_located((By.NAME, "exam_id"))).send_keys("IC3 Digital Literacy GS6")
-        time.sleep(2)
-        driver.find_element(By.NAME, "language").send_keys("English")
-        time.sleep(2)
-        driver.find_element(By.NAME, "module_id").send_keys("Level 1")
-        time.sleep(2)
-        driver.find_element(By.NAME, "location_id").send_keys("Toshkent / Ташкент")
+        # Select klassidan foydalanish (bu xatolarni oldini oladi)
+        exam_id = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        Select(exam_id).select_by_visible_text("IC3 Digital Literacy GS6")
         
-        # Kalendar yuklanishini kutish
+        time.sleep(1) # Sayt dropdowndagi qiymatni qayta yuklashi uchun qisqa kutish
+        
+        lang = driver.find_element(By.NAME, "language")
+        Select(lang).select_by_visible_text("English")
+        
+        time.sleep(1)
+        
+        module = driver.find_element(By.NAME, "module_id")
+        Select(module).select_by_visible_text("Level 1")
+        
+        time.sleep(1)
+        
+        loc = driver.find_element(By.NAME, "location_id")
+        Select(loc).select_by_visible_text("Toshkent / Ташкент")
+        
         print("Kalendar tekshirilmoqda...")
-        time.sleep(15)
+        time.sleep(10) # Kalendar yuklanishini kutish
 
         days = driver.find_elements(By.CLASS_NAME, "day")
         found = False
@@ -69,10 +78,14 @@ def check():
             print("Tekshirildi: Hozircha bo'sh joy yo'q.")
             
     except Exception as e:
-        print(f"Xatolik yuz berdi: {e}")
+        # Xatolikni to'liq Telegramga yuborish (shunda skrinshotga qarab o'tirmaysiz)
+        error_details = traceback.format_exc()
+        print(f"Xatolik yuz berdi:\n{error_details}")
+        # send_telegram(f"❌ Botda xatolik:\n{error_details[:200]}") # Ixtiyoriy: xatoni botga yuborish
     finally:
-        if 'driver' in locals():
+        if driver:
             driver.quit()
 
 if __name__ == "__main__":
+    send_telegram("🤖 Tizim: Ishni boshladim!")
     check()
