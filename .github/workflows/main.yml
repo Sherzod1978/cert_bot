@@ -2,9 +2,8 @@ name: Certiport Checker Bot
 
 on:
   schedule:
-    # Har kuni Toshkent vaqti bilan 09:00 da (UTC 04:00)
-    - cron: '0 4 * * *'
-  workflow_dispatch: # Qo'lda ishga tushirish imkoniyati
+    - cron: '0 4 * * *' # Har kuni Toshkent vaqti bilan 09:00 da
+  workflow_dispatch: # Qo'lda ishga tushirish tugmasi
 
 jobs:
   build:
