@@ -1,35 +1,32 @@
-name: Certiport Checker Bot
+name: Certiport Checker
 
 on:
   schedule:
-    - cron: '0 4 * * *' # Har kuni Toshkent vaqti bilan 09:00 da
-  workflow_dispatch: # Qo'lda ishga tushirish tugmasi
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  run-bot:
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: 3.10
 
       - name: Install dependencies
         run: |
-          pip install selenium requests webdriver-manager
+          pip install -r requirements.txt
+          playwright install chromium
 
       - name: Run bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python bot.py
-
-      - name: Upload Error Screenshot
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: error-screenshot
-          path: debug_error.png
