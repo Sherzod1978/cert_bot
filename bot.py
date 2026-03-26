@@ -1,66 +1,54 @@
-import os
+import time
 import requests
-from playwright.sync_api import sync_playwright
+import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-TOKEN = os.environ.get("8783984383:AAFzd6Gj41vOLlPJ5E4oofQZ5tmVAg1mQ5g")
-CHAT_ID = os.environ.get("1024073475")
+TOKEN = os.getenv("8783984383:AAFzd6Gj41vOLlPJ5E4oofQZ5tmVAg1mQ5g")
+CHAT_ID = os.getenv("1024073475")
+URL = "https://certiport.uz/uz/register"
 
+def send_msg(text):
+    requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage", params={"chat_id": CHAT_ID, "text": text})
 
-def send_telegram(msg):
-    if TOKEN and CHAT_ID:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
-
-
-def check():
-
-    with sync_playwright() as p:
-
-        browser = p.chromium.launch(headless=True)
-
-        page = browser.new_page()
-
-        print("Sayt ochilmoqda...")
-        page.goto("https://certiport.uz/uz/register")
-
-        page.wait_for_timeout(8000)
-
-        print("Imtihon tanlanmoqda...")
-        page.select_option('select[name="exam_id"]', label="IC3 Digital Literacy GS6")
-
-        print("Viloyat tanlanmoqda...")
-        page.select_option('select[name="location_id"]', label="Toshkent / Ташкент")
-
-        page.wait_for_timeout(5000)
-
-        print("Kalendar tekshirilmoqda...")
-
-        days = page.query_selector_all(".day")
-
-        found = False
-
-        for day in days:
-
-            text = day.inner_text().strip()
-            class_name = day.get_attribute("class")
-
-            if text.isdigit() and "red" not in class_name:
-
-                send_telegram(
-                    f"🔥 BO'SH JOY TOPILDI!\n\nSana: {text}\nhttps://certiport.uz/uz/register"
-                )
-
-                found = True
-                break
-
-        if not found:
-            print("Hozircha bo'sh joy yo'q.")
-
-        browser.close()
-
+def run_check():
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.get(URL)
+        wait = WebDriverWait(driver, 30)
+        
+        # Elementni kutish va topish
+        exam_select = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        
+        # Tanlovlarni amalga oshirish
+        Select(exam_select).select_by_visible_text("IC3 Digital Literacy GS6")
+        time.sleep(2)
+        
+        # Toshkentni tanlash
+        loc_select = Select(driver.find_element(By.NAME, "location_id"))
+        loc_select.select_by_visible_text("Toshkent / Ташкент")
+        time.sleep(5) # Kalendar yuklanishi uchun
+        
+        # Bo'sh kunlarni tekshirish (v-btn klassi orqali)
+        available = driver.find_elements(By.CSS_SELECTOR, ".v-btn--active:not(.v-btn--disabled)")
+        
+        if len(available) > 0:
+            send_msg("DIQQAT! Certiport.uz saytida bo'sh joy topildi!")
+        else:
+            print("Bo'sh joy yo'q.")
+            
+    except Exception as e:
+        print(f"Xato: {e}")
+    finally:
+        driver.quit()
 
 if __name__ == "__main__":
-
-    send_telegram("🤖 Certiport monitoring ishga tushdi")
-
-    check()
+    run_check()
