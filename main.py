@@ -54,4 +54,5 @@ def run_check():
         driver.quit()
 
 if __name__ == "__main__":
+    # send_msg("Bot tekshiruvni boshladi...") # Test uchun buni vaqtincha yoqing
     run_check()
