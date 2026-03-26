@@ -9,8 +9,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-TOKEN = os.getenv("8783984383:AAFzd6Gj41vOLlPJ5E4oofQZ5tmVAg1mQ5g")
-CHAT_ID = os.getenv("1024073475")
+# GitHub Secrets orqali olinadi
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 URL = "https://certiport.uz/uz/register"
 
 def send_msg(text):
@@ -25,6 +26,7 @@ def run_check():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     
+    # GitHub (Linux) uchun drayverni avtomatik sozlash
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     
@@ -32,42 +34,38 @@ def run_check():
         driver.get(URL)
         wait = WebDriverWait(driver, 30)
         
-        # 1. Imtihonni tanlash: IC3 Digital Literacy GS6
+        # 1. Imtihon: IC3 Digital Literacy GS6
         exam = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
         Select(exam).select_by_visible_text("IC3 Digital Literacy GS6")
         time.sleep(2)
         
-        # 2. Tilni tanlash: English
+        # 2. Til: English
         lang = wait.until(EC.presence_of_element_located((By.NAME, "lang_id")))
         Select(lang).select_by_visible_text("English")
         time.sleep(2)
         
-        # 3. Modulni tanlash: Level 1
+        # 3. Modul: Level 1
         module = wait.until(EC.presence_of_element_located((By.NAME, "module_id")))
         Select(module).select_by_visible_text("Level 1")
         time.sleep(2)
         
-        # 4. Joyni tanlash: Toshkent / Ташкент
+        # 4. Joy: Toshkent / Ташкент
         loc = wait.until(EC.presence_of_element_located((By.NAME, "location_id")))
         Select(loc).select_by_visible_text("Toshkent / Ташкент")
         
-        # Kalendar yuklanishi uchun biroz ko'proq kutamiz
-        print("Kalendar tekshirilmoqda...")
-        time.sleep(7)
+        # Kalendar yuklanishini kutish (Skrinshotdagi kalendar chiqishi uchun)
+        time.sleep(8)
         
-        # Aktiv sanalarni qidirish (v-btn klassi ichidagi disabled bo'lmagan sanalar)
-        # Certiport kalendarida bo'sh kunlar odatda 'v-btn--disabled' bo'lmaydi
+        # Bo'sh kunlarni qidirish (v-btn klassi ichidagi band bo'lmagan kunlar)
+        # Qizil (band) kunlar odatda 'v-btn--disabled' bo'ladi
         available_days = driver.find_elements(By.XPATH, "//button[contains(@class, 'v-btn') and not(contains(@class, 'v-btn--disabled')) and .//div[@class='v-btn__content' and number()]]")
         
-        # Bugungi yoki o'tib ketgan kunlarni hisobga olmaslik uchun qo'shimcha filtr
-        real_slots = [d for d in available_days if d.is_enabled()]
-
-        if len(real_slots) > 0:
-            msg = "🔔 Certiport: Bo'sh joy topildi! Tezroq ro'yxatdan o'ting: " + URL
+        if len(available_days) > 0:
+            msg = "🔔 Certiport: BO'SH JOY TOPILDI! Tezroq ro'yxatdan o'ting: " + URL
             send_msg(msg)
-            print("Natija: Joy bor!")
+            print("Natija: Bo'sh sana bor!")
         else:
-            print("Natija: Bo'sh joy yo'q.")
+            print("Natija: Hamma kunlar band.")
             
     except Exception as e:
         print(f"Xatolik: {e}")
