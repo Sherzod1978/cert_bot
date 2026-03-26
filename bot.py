@@ -1,13 +1,6 @@
 import os
-import time
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
 
 TOKEN = os.environ.get("8783984383:AAFzd6Gj41vOLlPJ5E4oofQZ5tmVAg1mQ5g")
 CHAT_ID = os.environ.get("1024073475")
@@ -21,74 +14,53 @@ def send_telegram(msg):
 
 def check():
 
-    chrome_options = Options()
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1920,1080")
+    with sync_playwright() as p:
 
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=chrome_options
-    )
+        browser = p.chromium.launch(headless=True)
 
-    try:
+        page = browser.new_page()
 
         print("Sayt ochilmoqda...")
-        driver.get("https://certiport.uz/uz/register")
+        page.goto("https://certiport.uz/uz/register")
 
-        wait = WebDriverWait(driver, 60)
+        page.wait_for_timeout(8000)
 
         print("Imtihon tanlanmoqda...")
-        exam = wait.until(
-            EC.element_to_be_clickable((By.NAME, "exam_id"))
-        )
-
-        Select(exam).select_by_visible_text("IC3 Digital Literacy GS6")
-
-        time.sleep(2)
+        page.select_option('select[name="exam_id"]', label="IC3 Digital Literacy GS6")
 
         print("Viloyat tanlanmoqda...")
-        loc = wait.until(
-            EC.element_to_be_clickable((By.NAME, "location_id"))
-        )
+        page.select_option('select[name="location_id"]', label="Toshkent / Ташкент")
 
-        Select(loc).select_by_visible_text("Toshkent / Ташкент")
-
-        time.sleep(5)
+        page.wait_for_timeout(5000)
 
         print("Kalendar tekshirilmoqda...")
-        days = driver.find_elements(By.CLASS_NAME, "day")
+
+        days = page.query_selector_all(".day")
 
         found = False
 
         for day in days:
 
+            text = day.inner_text().strip()
             class_name = day.get_attribute("class")
 
-            if "red" not in class_name and day.text.strip().isdigit():
+            if text.isdigit() and "red" not in class_name:
 
                 send_telegram(
-                    f"🔥 BO'SH JOY TOPILDI!\n\nSana: {day.text}\nhttps://certiport.uz/uz/register"
+                    f"🔥 BO'SH JOY TOPILDI!\n\nSana: {text}\nhttps://certiport.uz/uz/register"
                 )
 
                 found = True
                 break
 
         if not found:
-            print("Bo'sh joy yo'q")
+            print("Hozircha bo'sh joy yo'q.")
 
-    except Exception as e:
-
-        print("Xatolik:", e)
-        driver.save_screenshot("error.png")
-
-    finally:
-        driver.quit()
+        browser.close()
 
 
 if __name__ == "__main__":
 
-    send_telegram("🤖 Certiport tekshiruv boshlandi")
+    send_telegram("🤖 Certiport monitoring ishga tushdi")
 
     check()
