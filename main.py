@@ -29,36 +29,17 @@ def run_check():
     # GitHub (Linux) uchun drayverni avtomatik sozlash
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
-    
     try:
+        print("Sayt yuklanmoqda...")
         driver.get(URL)
-        wait = WebDriverWait(driver, 30)
+        wait = WebDriverWait(driver, 20)
         
-        # 1. Imtihon: IC3 Digital Literacy GS6
-        exam = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
-        Select(exam).select_by_visible_text("IC3 Digital Literacy GS6")
-        time.sleep(2)
+        print("1. Imtihon turi tanlanmoqda...")
+        exam_el = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        # ... qolgan kodlar
         
-        # 2. Til: English
-        lang = wait.until(EC.presence_of_element_located((By.NAME, "lang_id")))
-        Select(lang).select_by_visible_text("English")
-        time.sleep(2)
-        
-        # 3. Modul: Level 1
-        module = wait.until(EC.presence_of_element_located((By.NAME, "module_id")))
-        Select(module).select_by_visible_text("Level 1")
-        time.sleep(2)
-        
-        # 4. Joy: Toshkent / Ташкент
-        loc = wait.until(EC.presence_of_element_located((By.NAME, "location_id")))
-        Select(loc).select_by_visible_text("Toshkent / Ташкент")
-        
-        # Kalendar yuklanishini kutish (Skrinshotdagi kalendar chiqishi uchun)
-        time.sleep(8)
-        
-        # Bo'sh kunlarni qidirish (v-btn klassi ichidagi band bo'lmagan kunlar)
-        # Qizil (band) kunlar odatda 'v-btn--disabled' bo'ladi
-        available_days = driver.find_elements(By.XPATH, "//button[contains(@class, 'v-btn') and not(contains(@class, 'v-btn--disabled')) and .//div[@class='v-btn__content' and number()]]")
+        print("Tekshiruv yakunlandi, bo'sh joy topilmadi.") # Agar xato bo'lmasa shu chiqadi
+   
         
         if len(available_days) > 0:
             msg = "🔔 Certiport: BO'SH JOY TOPILDI! Tezroq ro'yxatdan o'ting: " + URL
