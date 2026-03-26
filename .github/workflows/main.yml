@@ -2,24 +2,29 @@ name: Certiport Slot Checker
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Har 15 daqiqada ishlaydi
-  workflow_dispatch: # Qo'lda ishga tushirish uchun
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.14'
 
+      - name: Install Google Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -航空 google-chrome-stable
+
       - name: Install dependencies
         run: |
-          pip install selenium requests
+          pip install selenium requests webdriver-manager
 
       - name: Run script
         env:
