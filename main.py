@@ -20,44 +20,57 @@ def send_msg(text):
 
 def run_check():
     options = Options()
-    options.add_argument("--headless=new") # Ekransiz rejim
+    options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     
-    # Drayverni sozlash
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     
     try:
-        print("Sayt ochilmoqda...")
         driver.get(URL)
         wait = WebDriverWait(driver, 30)
         
-        # Element yuklanishini kutish
-        print("Imtihon turi tanlanmoqda...")
-        exam_el = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
-        Select(exam_el).select_by_visible_text("IC3 Digital Literacy GS6")
+        # 1. Imtihonni tanlash: IC3 Digital Literacy GS6
+        exam = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        Select(exam).select_by_visible_text("IC3 Digital Literacy GS6")
+        time.sleep(2)
         
-        time.sleep(3) # Tanlovlar orasida kutish
+        # 2. Tilni tanlash: English
+        lang = wait.until(EC.presence_of_element_located((By.NAME, "lang_id")))
+        Select(lang).select_by_visible_text("English")
+        time.sleep(2)
         
-        print("Joy tanlanmoqda...")
-        loc_el = wait.until(EC.presence_of_element_located((By.NAME, "location_id")))
-        Select(loc_el).select_by_visible_text("Toshkent / Ташкент")
+        # 3. Modulni tanlash: Level 1
+        module = wait.until(EC.presence_of_element_located((By.NAME, "module_id")))
+        Select(module).select_by_visible_text("Level 1")
+        time.sleep(2)
         
-        time.sleep(5) # Kalendar yuklanishi uchun
+        # 4. Joyni tanlash: Toshkent / Ташкент
+        loc = wait.until(EC.presence_of_element_located((By.NAME, "location_id")))
+        Select(loc).select_by_visible_text("Toshkent / Ташкент")
         
-        # Aktiv sanalarni tekshirish
-        available = driver.find_elements(By.CSS_SELECTOR, ".v-btn--active:not(.v-btn--disabled)")
+        # Kalendar yuklanishi uchun biroz ko'proq kutamiz
+        print("Kalendar tekshirilmoqda...")
+        time.sleep(7)
         
-        if len(available) > 0:
-            send_msg("🔔 Certiport.uz saytida bo'sh joy topildi! Tezroq ro'yxatdan o'ting.")
-            print("Natija: Bo'sh joy bor!")
+        # Aktiv sanalarni qidirish (v-btn klassi ichidagi disabled bo'lmagan sanalar)
+        # Certiport kalendarida bo'sh kunlar odatda 'v-btn--disabled' bo'lmaydi
+        available_days = driver.find_elements(By.XPATH, "//button[contains(@class, 'v-btn') and not(contains(@class, 'v-btn--disabled')) and .//div[@class='v-btn__content' and number()]]")
+        
+        # Bugungi yoki o'tib ketgan kunlarni hisobga olmaslik uchun qo'shimcha filtr
+        real_slots = [d for d in available_days if d.is_enabled()]
+
+        if len(real_slots) > 0:
+            msg = "🔔 Certiport: Bo'sh joy topildi! Tezroq ro'yxatdan o'ting: " + URL
+            send_msg(msg)
+            print("Natija: Joy bor!")
         else:
-            print("Natija: Hozircha bo'sh joy yo'q.")
+            print("Natija: Bo'sh joy yo'q.")
             
     except Exception as e:
-        print(f"Xatolik yuz berdi: {e}")
+        print(f"Xatolik: {e}")
     finally:
         driver.quit()
 
