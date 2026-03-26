@@ -15,47 +15,49 @@ URL = "https://certiport.uz/uz/register"
 
 def send_msg(text):
     if TOKEN and CHAT_ID:
-        requests.get(f"https://api.telegram.org/bot{TOKEN}/sendMessage", params={"chat_id": CHAT_ID, "text": text})
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        requests.get(url, params={"chat_id": CHAT_ID, "text": text})
 
 def run_check():
     options = Options()
-    options.add_argument("--headless=new")
+    options.add_argument("--headless=new") # Ekransiz rejim
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     
-    # GitHub muhitida ChromeDriver-ni o'rnatish
+    # Drayverni sozlash
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     
     try:
+        print("Sayt ochilmoqda...")
         driver.get(URL)
         wait = WebDriverWait(driver, 30)
         
-        # Elementni kutish
-        exam_select = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        # Element yuklanishini kutish
+        print("Imtihon turi tanlanmoqda...")
+        exam_el = wait.until(EC.presence_of_element_located((By.NAME, "exam_id")))
+        Select(exam_el).select_by_visible_text("IC3 Digital Literacy GS6")
         
-        # Tanlovlarni amalga oshirish
-        Select(exam_select).select_by_visible_text("IC3 Digital Literacy GS6")
-        time.sleep(3)
+        time.sleep(3) # Tanlovlar orasida kutish
         
-        # Toshkentni tanlash
-        loc_select = Select(wait.until(EC.presence_of_element_located((By.NAME, "location_id"))))
-        loc_select.select_by_visible_text("Toshkent / Ташкент")
-        time.sleep(5)
+        print("Joy tanlanmoqda...")
+        loc_el = wait.until(EC.presence_of_element_located((By.NAME, "location_id")))
+        Select(loc_el).select_by_visible_text("Toshkent / Ташкент")
         
-        # Bo'sh kunlarni tekshirish
+        time.sleep(5) # Kalendar yuklanishi uchun
+        
+        # Aktiv sanalarni tekshirish
         available = driver.find_elements(By.CSS_SELECTOR, ".v-btn--active:not(.v-btn--disabled)")
         
         if len(available) > 0:
-            send_msg("DIQQAT! Certiport.uz saytida bo'sh joy topildi!")
-            print("Joy topildi!")
+            send_msg("🔔 Certiport.uz saytida bo'sh joy topildi! Tezroq ro'yxatdan o'ting.")
+            print("Natija: Bo'sh joy bor!")
         else:
-            print("Hozircha bo'sh joy yo'q.")
+            print("Natija: Hozircha bo'sh joy yo'q.")
             
     except Exception as e:
-        print(f"Xato yuz berdi: {e}")
+        print(f"Xatolik yuz berdi: {e}")
     finally:
         driver.quit()
 
